@@ -1,0 +1,67 @@
+FROM alpine:latest
+
+WORKDIR /var/www/html
+
+COPY . ./RealTimeLocation
+
+# Essentials
+RUN echo "UTC" > /etc/timezone
+RUN apk add --no-cache zip unzip curl sqlite nginx supervisor
+
+# Installing PHP
+RUN apk add --no-cache php8 \
+    php8-common \
+    php8-fpm \
+    php8-pdo \
+    php8-opcache \
+    php8-zip \
+    php8-phar \
+    php8-iconv \
+    php8-cli \
+    php8-curl \
+    php8-openssl \
+    php8-mbstring \
+    php8-tokenizer \
+    php8-fileinfo \
+    php8-json \
+    php8-xml \
+    php8-xmlwriter \
+    php8-simplexml \
+    php8-dom \
+    php8-pdo_mysql \
+    php8-pdo_sqlite \
+    php8-tokenizer \
+    php8-pecl-redis \
+    php8-mysqli 
+
+RUN ln -s /usr/bin/php8 /usr/bin/php
+
+# Installing composer
+RUN curl -sS https://getcomposer.org/installer -o composer-setup.php
+RUN php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+RUN rm -rf composer-setup.php
+
+# Configure PHP
+RUN mkdir -p /run/php/
+RUN touch /run/php/php8.0-fpm.pid
+
+RUN cd /var/www/html/RealTimeLocation && composer update && composer install
+
+RUN apk add --update nodejs npm
+RUN cd /var/www/html/RealTimeLocation && npm install && npm run dev
+
+RUN php /var/www/html/RealTimeLocation/artisan config:cache && php /var/www/html/RealTimeLocation/artisan route:cache && php /var/www/html/RealTimeLocation/artisan view:clear
+
+# Copy hello-cron file to the cron.d directory
+COPY cronlaravel /etc/cron.d/cronlaravel
+
+# Give execution rights on the cron job
+RUN chmod 0644 /etc/cron.d/cronlaravel
+
+# Apply cron job
+RUN crontab /etc/cron.d/cronlaravel
+RUN crontab -e
+
+EXPOSE 6001
+
+CMD php RealTimeLocation/artisan websockets:serve --host=0.0.0.0

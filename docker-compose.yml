@@ -1,0 +1,68 @@
+version: '3'
+services:
+  
+  #Mainapp Service
+  mainapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: "mertcan/mainapp"
+    container_name: mainapp
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+
+
+  #Websocket Service
+  appwebsocket:
+    build:
+      context: .
+      dockerfile: Dockerfile.websocket
+    image: "mertcan/websocket"
+    container_name: websocketapp
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "6001:6001"
+    networks:
+      - app-network
+
+  #Redis Service
+  redis:
+    image: "redis/redis-stack"
+    container_name: redis
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    networks:
+      - app-network
+
+
+  #MySQL Service
+  db:
+    image: mysql:5.7.22
+    build:
+      context: .
+      dockerfile: Dockerfile.mysql
+    container_name: db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: 123456
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - app-network
+
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
