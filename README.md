@@ -12,6 +12,7 @@
 Kurulum:
 
 - $ composer update
+- $ composer install
 - $ docker-compose up -d
 - $ php artisan php artisan queue:work // Data pushlamak icin
 - Hepsi ayağa kalktıktan sonra database migrate için browser localip:8000/testdata 3 defa refresh yaptıktan sonra önce migrate ardından test datası ekleyip çalışmaya başlıyor.
